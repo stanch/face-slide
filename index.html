@@ -1,0 +1,235 @@
+<!doctype html>
+<html>
+    <meta charset="utf-8">
+    <title>FaceSlide</title>
+    <head>
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <script src="https://unpkg.com/lodash@4.17.11"></script>
+        <style type="text/css">
+            html, body {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+            }
+            img, span, textarea {
+                display: block;
+            }
+            body {
+                font-family: Arial;
+            }
+            #container {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+            }
+            #people {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+            }
+            .team-names {
+                display: flex;
+                align-items: center;
+            }
+            .team-name {
+                font-size: 16pt;
+                margin: 5px 10px;
+                box-sizing: border-box;
+                text-align: center;
+            }
+            .teams {
+                display: flex;
+                height: 100%;
+            }
+            .team {
+                display: flex;
+                flex-direction: column;
+                background: #f7f7f7;
+                border-radius: 20px;
+                padding: 10px;
+                margin: 0 10px;
+                box-sizing: border-box;
+                width: 100%;
+            }
+            .row {
+                display: flex;
+                flex-direction: column;
+                flex-grow: 1;
+                margin: 10px 0;
+                box-sizing: border-box;
+                width: 100%;
+                justify-content: space-evenly;
+            }
+            .faces {
+                display: flex;
+                flex-grow: 1;
+                flex-basis: 0;
+                margin: 5px 0;
+            }
+            .captions {
+                display: flex;
+                align-items: center;
+            }
+            .face {
+                flex-grow: 1;
+                flex-basis: 0;
+            }
+            .face img {
+                border-radius: 50%;
+                align-self: center;
+                max-height: 100%;
+                max-width: 100%;
+                margin: auto;
+            }
+            .caption {
+                flex-grow: 1;
+                flex-basis: 0;
+            }
+            .name {
+                font-weight: bold;
+                text-align: center;
+            }
+            .position {
+                font-style: italic;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="container">
+            <textarea rows="10" placeholder="Paste the data here!" oninput="render()"></textarea>
+            <div>
+                <label><input id="include-positions" type="checkbox" onclick="render()" checked>Include positions</label>
+                <label><input id="include-names" type="checkbox" onclick="render()" checked>Include names</label>
+            </div>
+            <div id="people"></div>
+        </div>
+        <script type="text/javascript">
+            const pick = (array, buckets) => {
+                if (_.isEmpty(array)) return []
+                const bucket = _.head(buckets)
+                const rotatedBuckets = [..._.tail(buckets), bucket]
+                return [_.take(array, bucket), ...pick(_.drop(array, bucket), rotatedBuckets)]
+            }
+            const splits = array => {
+                const length = array.length
+                return _.compact(_.map(_.range(1, length+1), rows => {
+                    const columns = Math.floor(length / rows)
+                    const leftovers = length % rows
+                    if (!leftovers) return pick(array, [columns])
+                    if (length > 3 && columns == 1) return false
+                    const fitting = leftovers - rows / 2
+                    if (fitting == 0 || fitting == 0.5) return pick(array, [columns+1, columns])
+                    if (fitting == -0.5) return pick(array, [columns, columns+1])
+                    return false
+                }))
+            }
+            const splitColumns = split => _.maxBy(split, row => row.length).length
+            const bestSplit = (array, aspectRatio) => _.minBy(
+                splits(array),
+                split => Math.abs(aspectRatio - splitColumns(split) / split.length)
+            )
+
+            const fitTeams = (teams, totalWidth, totalHeight) => {
+                const totalPeople = _.sumBy(teams, team => team.people.length)
+                const weights0 = _.map(teams, team => team.people.length / totalPeople)
+                const splits = _.map(
+                    _.zip(teams, weights0),
+                    ([team, w]) => bestSplit(team.people, w * totalWidth / totalHeight)
+                )
+                const totalColumns = _.sumBy(splits, split => splitColumns(split))
+                const weights = _.map(splits, split => splitColumns(split) / totalColumns)
+                return {splits, weights}
+            }
+
+            const multiTeamSlide = (teams, element) => {
+                const container = d3.select(element)
+                container.selectAll("div").remove()
+
+                const {splits, weights} = fitTeams(teams, element.clientWidth, element.clientHeight)
+
+                container.append("div")
+                    .attr("class", "team-names")
+                    .selectAll("span")
+                    .data(teams).enter()
+                    .append("span")
+                    .attr("class", "team-name")
+                    .text(d => d.name)
+                    .style("width", (d, i) => `${100 * weights[i]}%`)
+
+                const teamsElement = container.append("div")
+                    .attr("class", "teams")
+
+                const teamElements = teamsElement.selectAll("div")
+                    .data(splits).enter()
+                    .append("div")
+                    .style("width", (d, i) => `${100 * weights[i]}%`)
+                    .each((d, i, n) => flatSlide(d, n[i], null))
+
+                if (teams.length > 1) {
+                    const faceSize = _.min([
+                        _.minBy(teamsElement.selectAll(".face").nodes(), "clientWidth").clientWidth,
+                        _.minBy(teamsElement.selectAll(".face").nodes(), "clientHeight").clientHeight
+                    ])
+                    teamsElement.style("align-items", "flex-start")
+                    teamElements.each((d, i, n) => flatSlide(d, n[i], faceSize))
+                }
+            }
+
+            const flatSlide = (split, element, faceSize) => {
+                const container = d3.select(element)
+                const columns = splitColumns(split)
+                container.selectAll("div").remove()
+
+                const row = container
+                    .attr("class", "team")
+                    .style("justify-content", faceSize ? "flex-start" : "space-evenly")
+                    .selectAll("div")
+                    .data(split).enter()
+                    .append("div")
+                    .attr("class", "row")
+                    .style("padding", d => `0 ${50*(columns-d.length)/columns}%`)
+
+                row.append("div")
+                    .attr("class", "faces")
+                    .style("flex-basis", faceSize ? "auto" : 0)
+                    .selectAll("div")
+                    .data(d => d).enter()
+                    .append("div")
+                    .attr("class", "face")
+                    .style("flex-basis", faceSize ? "auto" : 0)
+                    .style("height", faceSize ? `${faceSize}px` : "auto")
+                    .append("img")
+                    .attr("src", d => d.face)
+
+                const caption = row.append("div")
+                    .attr("class", "captions")
+                    .selectAll("div")
+                    .data(d => d).enter()
+                    .append("div")
+                    .attr("class", "caption")
+                caption.append("span")
+                    .attr("class", "name")
+                    .style("display", document.querySelector("#include-names").checked ? "block" : "none")
+                    .text(d => d.name)
+                caption.append("span")
+                    .attr("class", "position")
+                    .style("display", document.querySelector("#include-positions").checked ? "block" : "none")
+                    .text(d => d.position)
+            }
+
+            const render = () => {
+                try {
+                    const teams = _.map(document.querySelector("textarea").value.split("\n"), JSON.parse)
+                    multiTeamSlide(teams, document.getElementById("people"))
+                } catch (err) {
+
+                }
+            }
+
+            window.addEventListener("resize", render)
+        </script>
+    </body>
+</html>
