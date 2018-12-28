@@ -87,6 +87,9 @@
                 max-width: 100%;
                 margin: auto;
             }
+            .face.no-round-corners img {
+                border-radius: 0;
+            }
             .caption {
                 flex-grow: 1;
                 flex-basis: 0;
@@ -103,11 +106,19 @@
     </head>
     <body>
         <div id="container">
-            <textarea rows="10" placeholder="Paste the data here!" oninput="render()"></textarea>
+            <textarea rows="10" placeholder="Paste the data here!" oninput="render()">
+# A Team
+
+* John “Hannibal” Smith, Leader ![picture](https://upload.wikimedia.org/wikipedia/en/9/98/HannibalSmith.jpg)
+* Templeton “Faceman” Peck, Con man ![picture](https://upload.wikimedia.org/wikipedia/en/e/e2/TempletonPeck.jpg)
+* H M “Howling Mad” Murdock, Pilot ![picture](https://upload.wikimedia.org/wikipedia/en/1/18/HMMurdock.jpg)
+* Bosco Albert “Bad Attitude” Baracus, Mechanic ![picture](https://upload.wikimedia.org/wikipedia/en/2/29/BABaracus.jpg)
+            </textarea>
             <div>
                 <label><input id="include-positions" type="checkbox" onclick="render()" checked>Include positions</label>
                 <label><input id="include-names" type="checkbox" onclick="render()" checked>Include names</label>
-                <label><input id="include-background" type="checkbox" onclick="toggleBackground()" checked>Include background</label>
+                <label><input id="include-background" type="checkbox" onclick="render()" checked>Include background</label>
+                <label><input id="round-corners" type="checkbox" onclick="render()">Round corners</label>
                 <a href="setup.html">Usage instructions</a>
                 <a href="https://beta.observablehq.com/@stanch/packing-faces">How it works</a>
             </div>
@@ -193,6 +204,7 @@
 
                 const row = container
                     .attr("class", "team")
+                    .classed("no-background", !document.querySelector("#include-background").checked)
                     .style("justify-content", faceSize ? "flex-start" : "space-evenly")
                     .selectAll("div")
                     .data(split).enter()
@@ -207,6 +219,7 @@
                     .data(d => d).enter()
                     .append("div")
                     .attr("class", "face")
+                    .classed("no-round-corners", !document.querySelector("#round-corners").checked)
                     .style("flex-basis", faceSize ? "auto" : 0)
                     .style("height", faceSize ? `${faceSize}px` : "auto")
                     .append("img")
@@ -249,10 +262,8 @@
                 }
             }
 
-            const toggleBackground = () =>
-                document.querySelectorAll('.team').forEach(team => team.classList.toggle('no-background'))
-
             window.addEventListener("resize", render)
+            render()
         </script>
     </body>
 </html>
