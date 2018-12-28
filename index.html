@@ -5,6 +5,7 @@
     <head>
         <script src="https://d3js.org/d3.v5.min.js"></script>
         <script src="https://unpkg.com/lodash@4.17.11"></script>
+        <script src="https://unpkg.com/simple-markdown@0.4.2"></script>
         <style type="text/css">
             html, body {
                 margin: 0;
@@ -52,6 +53,9 @@
                 margin: 0 10px;
                 box-sizing: border-box;
                 width: 100%;
+            }
+            .team.no-background {
+                background: none;
             }
             .row {
                 display: flex;
@@ -103,6 +107,7 @@
             <div>
                 <label><input id="include-positions" type="checkbox" onclick="render()" checked>Include positions</label>
                 <label><input id="include-names" type="checkbox" onclick="render()" checked>Include names</label>
+                <label><input id="include-background" type="checkbox" onclick="toggleBackground()" checked>Include background</label>
                 <a href="setup.html">Usage instructions</a>
                 <a href="https://beta.observablehq.com/@stanch/packing-faces">How it works</a>
             </div>
@@ -224,12 +229,25 @@
 
             const render = () => {
                 try {
-                    const teams = _.map(document.querySelector("textarea").value.split("\n"), JSON.parse)
+                    const markdown = SimpleMarkdown.defaultBlockParse(document.querySelector("textarea").value)
+                    const teams = _.map(_.chunk(markdown, 2), teamMd => {
+                        const name = teamMd[0].content[0].content
+                        const people = _.map(teamMd[1].items, personMd => {
+                            const name = personMd[0].content
+                            const position = _.trim(personMd[1].content, ' ,')
+                            const face = personMd[2].target
+                            return {name, position, face}
+                        })
+                        return {name, people}
+                    })
                     multiTeamSlide(teams, document.getElementById("people"))
                 } catch (err) {
 
                 }
             }
+
+            const toggleBackground = () =>
+                document.querySelectorAll('.team').forEach(team => team.classList.toggle('no-background'))
 
             window.addEventListener("resize", render)
         </script>

@@ -1,7 +1,10 @@
 const area = document.createElement('textarea')
 area.style.display = 'block'
 document.querySelector('section > .inner_holder').prepend(area)
-const nodes = document.querySelectorAll('.position')
+const nodes = [].slice.call(document.querySelectorAll('.position'))
+    .filter(function(node) {
+        return !node.querySelector('a.position-box').classList.contains('is_open')
+    })
 const people = []
 nodes.forEach(function(node) {
     const w = window.open(node.querySelector('a.position-box').href)
@@ -15,12 +18,12 @@ nodes.forEach(function(node) {
         w.close()
     }
 })
+const teamName = document.querySelector('h1').textContent.replace('Group: ', '')
 const poll = setInterval(function() {
     if (people.length == nodes.length) {
-        area.value = JSON.stringify({
-            name: document.querySelector('h1').textContent.replace('Group: ', ''),
-            people: people
-        })
+        area.value = '# ' + teamName + '\n\n' + people.map(function(p) {
+            return '* ' + p.name + ', ' + p.position + ' ![picture](' + p.face + ')'
+        }).join('\n')
         clearInterval(poll)
         alert("Done!")
     }
