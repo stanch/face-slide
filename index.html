@@ -163,6 +163,7 @@
                     .data(teams).enter()
                     .append("span")
                     .attr("class", "team-name")
+                    .attr("contenteditable", "true")
                     .text(d => d.name)
                     .style("width", (d, i) => `${100 * weights[i]}%`)
 
@@ -219,10 +220,12 @@
                     .attr("class", "caption")
                 caption.append("span")
                     .attr("class", "name")
+                    .attr("contenteditable", "true")
                     .style("display", document.querySelector("#include-names").checked ? "block" : "none")
                     .text(d => d.name)
                 caption.append("span")
                     .attr("class", "position")
+                    .attr("contenteditable", "true")
                     .style("display", document.querySelector("#include-positions").checked ? "block" : "none")
                     .text(d => d.position)
             }

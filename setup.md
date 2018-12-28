@@ -22,5 +22,5 @@ javascript:void function(){const e=document.createElement("textarea");e.style.di
 4. New tabs will open to fetch full resolution face images. If only one tab opens, you need to disable popup blocking in your browser (for the current page) and repeat the process.
 5. Once everything is done and the extra tabs close, go back to the original tab and copy the code that appeared in a box at the top of the page.
 6. Open *FaceSlide* and paste the code.
-7. You can adjust the code as you like to fix inaccuracies and typos.
+7. You can tweak the code as you like to fix inaccuracies and typos. Alternatively, you can also edit the rendered names and positions directly (but not that if you update the code, your direct updates will be lost).
 8. Adjust the window size and take a screenshot. Done!
